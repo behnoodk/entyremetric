@@ -13,8 +13,8 @@ import {
   IconButton,
   CircularProgress,
   Snackbar, // Imported for notifications
-  Alert,    // Imported for notifications
-  Tooltip,  // Imported for tooltips
+  Alert, // Imported for notifications
+  Tooltip, // Imported for tooltips
 } from '@mui/material';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -45,7 +45,7 @@ const MetricDetail = () => {
   useEffect(() => {
     // Fetch metric data
     axios
-      .get(`http://localhost:5000/api/metrics/${metricId}`)
+      .get(`${process.env.REACT_APP_ROOT_URL}/api/metrics/${metricId}`)
       .then((response) => {
         setMetric(response.data);
       })
@@ -81,7 +81,7 @@ const MetricDetail = () => {
     if (weeks.length > 0) {
       // Fetch values
       axios
-        .get(`http://localhost:5000/api/metric-values/${metricId}`)
+        .get(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${metricId}`)
         .then((response) => {
           const valuesArray = [];
           const idsArray = [];
@@ -109,7 +109,7 @@ const MetricDetail = () => {
 
       // Fetch goals
       axios
-        .get(`http://localhost:5000/api/goals/${metricId}`)
+        .get(`${process.env.REACT_APP_ROOT_URL}/api/goals/${metricId}`)
         .then((response) => {
           const goalsArray = [];
           const idsArray = [];
@@ -158,20 +158,20 @@ const MetricDetail = () => {
         if (value !== '') {
           if (id) {
             // Update existing value
-            return axios.put(`http://localhost:5000/api/metric-values/${id}`, {
+            return axios.put(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${id}`, {
               value: parseFloat(value),
               week_start: week,
             });
           } else {
             // Create new value
-            return axios.post(`http://localhost:5000/api/metric-values/${metricId}`, {
+            return axios.post(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${metricId}`, {
               value: parseFloat(value),
               week_start: week,
             });
           }
         } else if (id) {
           // Delete the value if input is empty
-          return axios.delete(`http://localhost:5000/api/metric-values/${id}`);
+          return axios.delete(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${id}`);
         }
         return Promise.resolve(); // Return a resolved promise for null actions
       });
@@ -183,20 +183,20 @@ const MetricDetail = () => {
         if (goal !== '') {
           if (id) {
             // Update existing goal
-            return axios.put(`http://localhost:5000/api/goals/${id}`, {
+            return axios.put(`${process.env.REACT_APP_ROOT_URL}/api/goals/${id}`, {
               target_value: parseFloat(goal),
               week_start: week,
             });
           } else {
             // Create new goal
-            return axios.post(`http://localhost:5000/api/goals/${metricId}`, {
+            return axios.post(`${process.env.REACT_APP_ROOT_URL}/api/goals/${metricId}`, {
               target_value: parseFloat(goal),
               week_start: week,
             });
           }
         } else if (id) {
           // Delete the goal if input is empty
-          return axios.delete(`http://localhost:5000/api/goals/${id}`);
+          return axios.delete(`${process.env.REACT_APP_ROOT_URL}/api/goals/${id}`);
         }
         return Promise.resolve(); // Return a resolved promise for null actions
       });
@@ -228,7 +228,7 @@ const MetricDetail = () => {
   };
 
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'Good':
         return 'green';
       case 'Bad':
@@ -272,7 +272,9 @@ const MetricDetail = () => {
           <TableBody>
             {/* Display Metric Status */}
             <TableRow>
-              <TableCell><strong>Status</strong></TableCell>
+              <TableCell>
+                <strong>Status</strong>
+              </TableCell>
               {weeks.map((week, index) => {
                 const status = determineStatus(values[index], goals[index]);
                 return (
@@ -284,10 +286,12 @@ const MetricDetail = () => {
                 );
               })}
             </TableRow>
-            
+
             {/* Weeks Header */}
             <TableRow>
-              <TableCell><strong>Week</strong></TableCell>
+              <TableCell>
+                <strong>Week</strong>
+              </TableCell>
               {weeks.map((week, index) => (
                 <TableCell
                   key={index}
@@ -297,10 +301,12 @@ const MetricDetail = () => {
                 </TableCell>
               ))}
             </TableRow>
-            
+
             {/* Values Row */}
             <TableRow>
-              <TableCell><strong>Value</strong></TableCell>
+              <TableCell>
+                <strong>Value</strong>
+              </TableCell>
               {values.map((value, index) => (
                 <TableCell key={index}>
                   <TextField
@@ -317,10 +323,12 @@ const MetricDetail = () => {
                 </TableCell>
               ))}
             </TableRow>
-            
+
             {/* Goals Row */}
             <TableRow>
-              <TableCell><strong>Goal</strong></TableCell>
+              <TableCell>
+                <strong>Goal</strong>
+              </TableCell>
               {goals.map((goal, index) => (
                 <TableCell key={index}>
                   <TextField

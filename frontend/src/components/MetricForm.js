@@ -10,7 +10,7 @@ import {
   Snackbar,
   Alert,
   FormControlLabel, // Imported for Checkbox
-  Checkbox,          // Imported for Checkbox
+  Checkbox, // Imported for Checkbox
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -42,16 +42,18 @@ const MetricForm = () => {
     return str
       .trim()
       .split(' ') // Split by spaces
-      .filter(word => word !== '') // Remove extra spaces
-      .map(word => 
-        word
-          .split('-') // Split hyphenated words
-          .map(part => 
-            part === part.toUpperCase() 
-              ? part // Preserve all-uppercase parts
-              : (part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()) // Capitalize first letter
-          )
-          .join('-') // Rejoin hyphenated parts
+      .filter((word) => word !== '') // Remove extra spaces
+      .map(
+        (word) =>
+          word
+            .split('-') // Split hyphenated words
+            .map(
+              (part) =>
+                part === part.toUpperCase()
+                  ? part // Preserve all-uppercase parts
+                  : part.charAt(0).toUpperCase() + part.slice(1).toLowerCase(), // Capitalize first letter
+            )
+            .join('-'), // Rejoin hyphenated parts
       )
       .join(' '); // Rejoin words
   };
@@ -61,7 +63,7 @@ const MetricForm = () => {
     const fetchExistingData = async () => {
       setLoadingOptions({ teams: true, countries: true });
       try {
-        const response = await axios.get('http://localhost:5000/api/metrics');
+        const response = await axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metrics`);
         const allMetrics = response.data;
 
         // Extract unique teams and countries with normalization
@@ -70,7 +72,7 @@ const MetricForm = () => {
             allMetrics
               .map((metric) => metric.team)
               .filter((team) => team && team.trim() !== '')
-              .map((team) => normalizeString(team))
+              .map((team) => normalizeString(team)),
           ),
         ];
 
@@ -79,7 +81,7 @@ const MetricForm = () => {
             allMetrics
               .map((metric) => metric.country)
               .filter((country) => country && country.trim() !== '')
-              .map((country) => normalizeString(country))
+              .map((country) => normalizeString(country)),
           ),
         ];
 
@@ -133,7 +135,10 @@ const MetricForm = () => {
       };
 
       // Create the metric
-      const response = await axios.post('http://localhost:5000/api/metrics', normalizedMetric);
+      const response = await axios.post(
+        `${process.env.REACT_APP_ROOT_URL}/api/metrics`,
+        normalizedMetric,
+      );
 
       if (response.status === 201) {
         setSnackbarMessage('Metric saved successfully!');
@@ -149,8 +154,7 @@ const MetricForm = () => {
     } catch (error) {
       console.error('Error saving metric:', error);
       // Extract error message if available
-      const errorMsg =
-        error.response?.data?.message || 'An unexpected error occurred.';
+      const errorMsg = error.response?.data?.message || 'An unexpected error occurred.';
       setSnackbarMessage(`Failed to save metric: ${errorMsg}`);
       setSnackbarSeverity('error');
       setOpenSnackbar(true);
@@ -200,7 +204,9 @@ const MetricForm = () => {
         options={uniqueTeams}
         value={metric.team}
         onChange={(event, newValue) => handleAutocompleteChange(event, newValue, 'team')}
-        onInputChange={(event, newInputValue) => handleAutocompleteChange(event, newInputValue, 'team')}
+        onInputChange={(event, newInputValue) =>
+          handleAutocompleteChange(event, newInputValue, 'team')
+        }
         loading={loadingOptions.teams}
         renderInput={(params) => (
           <TextField
@@ -229,7 +235,9 @@ const MetricForm = () => {
         options={uniqueCountries}
         value={metric.country}
         onChange={(event, newValue) => handleAutocompleteChange(event, newValue, 'country')}
-        onInputChange={(event, newInputValue) => handleAutocompleteChange(event, newInputValue, 'country')}
+        onInputChange={(event, newInputValue) =>
+          handleAutocompleteChange(event, newInputValue, 'country')
+        }
         loading={loadingOptions.countries}
         renderInput={(params) => (
           <TextField

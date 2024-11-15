@@ -1,24 +1,16 @@
 // src/components/MetricsGrid.js
 
 import React, { useState, useEffect } from 'react';
-import {
-  Grid,
-  Paper,
-  Typography,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  Tooltip,
-} from '@mui/material';
+import { Grid, Paper, Typography, CircularProgress, Snackbar, Alert, Tooltip } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 // Define color constants for status
 const STATUS_COLORS = {
-  GOOD: '#386743',  // Green
-  BAD: '#cf0000',   // Red
-  NO_DATA: 'gray',  // Gray
+  GOOD: '#386743', // Green
+  BAD: '#cf0000', // Red
+  NO_DATA: 'gray', // Gray
 };
 
 const MetricsGrid = () => {
@@ -37,7 +29,7 @@ const MetricsGrid = () => {
     const fetchMetricsData = async () => {
       try {
         // Fetch all metrics
-        const metricsResponse = await axios.get('http://localhost:5000/api/metrics');
+        const metricsResponse = await axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metrics`);
         const allMetrics = metricsResponse.data;
 
         // For each metric, fetch the latest value and goal
@@ -45,14 +37,20 @@ const MetricsGrid = () => {
           allMetrics.map(async (metric) => {
             try {
               // Fetch latest metric value
-              const valuesResponse = await axios.get(`http://localhost:5000/api/metric-values/${metric.id}`);
-              const latestValueData = valuesResponse.data
-                .sort((a, b) => new Date(b.week_start) - new Date(a.week_start))[0]; // Get the latest entry
+              const valuesResponse = await axios.get(
+                `${process.env.REACT_APP_ROOT_URL}/api/metric-values/${metric.id}`,
+              );
+              const latestValueData = valuesResponse.data.sort(
+                (a, b) => new Date(b.week_start) - new Date(a.week_start),
+              )[0]; // Get the latest entry
 
               // Fetch latest goal
-              const goalsResponse = await axios.get(`http://localhost:5000/api/goals/${metric.id}`);
-              const latestGoalData = goalsResponse.data
-                .sort((a, b) => new Date(b.week_start) - new Date(a.week_start))[0]; // Get the latest entry
+              const goalsResponse = await axios.get(
+                `${process.env.REACT_APP_ROOT_URL}/api/goals/${metric.id}`,
+              );
+              const latestGoalData = goalsResponse.data.sort(
+                (a, b) => new Date(b.week_start) - new Date(a.week_start),
+              )[0]; // Get the latest entry
 
               // Determine status
               let status = 'No Data';
@@ -88,7 +86,7 @@ const MetricsGrid = () => {
                 statusColor: STATUS_COLORS.NO_DATA,
               };
             }
-          })
+          }),
         );
 
         setMetrics(metricsWithStatus);
@@ -163,9 +161,7 @@ const MetricsGrid = () => {
                   <Typography variant="body2">
                     Latest Goal: {metric.latestGoal !== null ? metric.latestGoal : 'N/A'}
                   </Typography>
-                  <Typography variant="body2">
-                    Status: {metric.status}
-                  </Typography>
+                  <Typography variant="body2">Status: {metric.status}</Typography>
                 </>
               }
               arrow
@@ -200,7 +196,10 @@ const MetricsGrid = () => {
                   }
                 }}
               >
-                <Typography variant="h6" style={{ color: '#fff', textAlign: 'center', marginBottom: '5px' }}>
+                <Typography
+                  variant="h6"
+                  style={{ color: '#fff', textAlign: 'center', marginBottom: '5px' }}
+                >
                   {metric.name}
                 </Typography>
                 <Typography variant="body2" style={{ color: '#fff', textAlign: 'center' }}>
@@ -222,11 +221,7 @@ const MetricsGrid = () => {
         onClose={handleSnackbarClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -1,20 +1,20 @@
 // src/components/EditMetric.js
 import React, { useState, useEffect } from 'react';
-import { 
-  TextField, 
-  Button, 
-  Typography, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Dialog, 
-  DialogActions, 
-  DialogContent, 
-  DialogContentText, 
-  DialogTitle, 
-  FormControlLabel, 
-  Checkbox // Imported Checkbox
+import {
+  TextField,
+  Button,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControlLabel,
+  Checkbox, // Imported Checkbox
 } from '@mui/material';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -39,7 +39,9 @@ const EditMetric = () => {
     // Fetch existing metric data
     const fetchMetric = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/metrics/${metricId}`);
+        const response = await axios.get(
+          `${process.env.REACT_APP_ROOT_URL}/api/metrics/${metricId}`,
+        );
         setMetric({
           name: response.data.name || '',
           description: response.data.description || '',
@@ -56,7 +58,7 @@ const EditMetric = () => {
     // Fetch unique countries and teams for select options
     const fetchCountriesAndTeams = async () => {
       try {
-        const metricsResponse = await axios.get('http://localhost:5000/api/metrics');
+        const metricsResponse = await axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metrics`);
         const allMetrics = metricsResponse.data;
 
         const uniqueCountries = [...new Set(allMetrics.map((m) => m.country))].filter(Boolean);
@@ -89,7 +91,10 @@ const EditMetric = () => {
     event.preventDefault();
     try {
       // Update the metric
-      const response = await axios.put(`http://localhost:5000/api/metrics/${metricId}`, metric);
+      const response = await axios.put(
+        `${process.env.REACT_APP_ROOT_URL}/api/metrics/${metricId}`,
+        metric,
+      );
 
       if (response.status === 200) {
         alert('Metric updated successfully!');
@@ -107,7 +112,9 @@ const EditMetric = () => {
   // Handle delete action
   const handleDelete = async () => {
     try {
-      const response = await axios.delete(`http://localhost:5000/api/metrics/${metricId}`);
+      const response = await axios.delete(
+        `${process.env.REACT_APP_ROOT_URL}/api/metrics/${metricId}`,
+      );
       if (response.status === 200) {
         alert('Metric deleted successfully!');
         navigate('/');
@@ -220,9 +227,9 @@ const EditMetric = () => {
           >
             Save Changes
           </Button>
-          <Button 
-            variant="outlined" 
-            color="secondary" 
+          <Button
+            variant="outlined"
+            color="secondary"
             onClick={() => navigate('/')}
             style={{ marginRight: '10px' }}
             aria-label="Back to Overview"
@@ -230,9 +237,9 @@ const EditMetric = () => {
             Back to Overview
           </Button>
           {/* Delete Button */}
-          <Button 
-            variant="contained" 
-            color="error" 
+          <Button
+            variant="contained"
+            color="error"
             onClick={() => setOpenDeleteDialog(true)}
             aria-label="Delete Metric"
           >

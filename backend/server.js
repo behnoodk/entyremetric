@@ -14,9 +14,11 @@ const migrate = require('./database/migration'); // Import migration
 app.use(express.json());
 
 // Configure CORS to allow requests from localhost:3000 (or your frontend port)
-app.use(cors({
-    origin: 'http://localhost:3000' // Update this to the port of your frontend server
-}));
+app.use(
+  cors({
+    origin: '*', // Update this to the port of your frontend server
+  }),
+);
 
 // Initialize database tables
 Metric.createTable();
@@ -32,7 +34,7 @@ app.use('/api/metric-values', valueRoutes);
 app.use('/api/goals', goalRoutes);
 
 // Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5012;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

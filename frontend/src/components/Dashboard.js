@@ -31,14 +31,7 @@ import { useParams } from 'react-router-dom'; // Changed from useLocation to use
 import { format } from 'date-fns'; // Ensure 'format' is imported
 
 // Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 const Dashboard = () => {
   // State variables for metrics and chart data
@@ -71,7 +64,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const metricsResponse = await axios.get('http://localhost:5000/api/metrics');
+        const metricsResponse = await axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metrics`);
         setMetrics(metricsResponse.data);
 
         // Extract unique countries from metrics data
@@ -97,7 +90,9 @@ const Dashboard = () => {
     if (metricId) {
       const preSelectMetric = async () => {
         try {
-          const metricResponse = await axios.get(`http://localhost:5000/api/metrics/${metricId}`);
+          const metricResponse = await axios.get(
+            `${process.env.REACT_APP_ROOT_URL}/api/metrics/${metricId}`,
+          );
           const metric = metricResponse.data;
 
           if (metric) {
@@ -129,7 +124,9 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedCountry) {
       const filteredMetrics = metrics.filter((metric) => metric.country === selectedCountry);
-      const uniqueTeams = [...new Set(filteredMetrics.map((metric) => metric.team))].filter(Boolean);
+      const uniqueTeams = [...new Set(filteredMetrics.map((metric) => metric.team))].filter(
+        Boolean,
+      );
       setTeams(uniqueTeams);
     } else {
       setTeams([]);
@@ -142,7 +139,7 @@ const Dashboard = () => {
     return metrics.filter(
       (metric) =>
         (!selectedCountry || metric.country === selectedCountry) &&
-        (!selectedTeam || metric.team === selectedTeam)
+        (!selectedTeam || metric.team === selectedTeam),
     );
   }, [metrics, selectedCountry, selectedTeam]);
 
@@ -161,8 +158,8 @@ const Dashboard = () => {
     try {
       // Fetch values and goals for the selected metric
       const [valuesResponse, goalsResponse] = await Promise.all([
-        axios.get(`http://localhost:5000/api/metric-values/${metricId}`),
-        axios.get(`http://localhost:5000/api/goals/${metricId}`),
+        axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${metricId}`),
+        axios.get(`${process.env.REACT_APP_ROOT_URL}/api/goals/${metricId}`),
       ]);
 
       const values = valuesResponse.data;
@@ -309,12 +306,12 @@ const Dashboard = () => {
     const max = parseFloat(yAxisMax);
     const dataMax = chartData
       ? Math.max(
-          ...chartData.datasets.flatMap((dataset) => dataset.data).filter((val) => val !== null)
+          ...chartData.datasets.flatMap((dataset) => dataset.data).filter((val) => val !== null),
         )
       : 0;
     const dataMin = chartData
       ? Math.min(
-          ...chartData.datasets.flatMap((dataset) => dataset.data).filter((val) => val !== null)
+          ...chartData.datasets.flatMap((dataset) => dataset.data).filter((val) => val !== null),
         )
       : 0;
 
@@ -436,7 +433,9 @@ const Dashboard = () => {
           </Typography>
           <Grid container spacing={2}>
             {filteredMetrics.map((metric) => (
-              <Grid item xs={12} sm={6} md={3} key={metric.id}> {/* Changed md from 4 to 3 for 4 per row */}
+              <Grid item xs={12} sm={6} md={3} key={metric.id}>
+                {' '}
+                {/* Changed md from 4 to 3 for 4 per row */}
                 <Card
                   sx={{
                     backgroundColor: metric.id === selectedMetricId ? '#592846' : '#f5f5f5',

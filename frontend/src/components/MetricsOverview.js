@@ -70,12 +70,14 @@ const MetricsOverview = () => {
       setLoadingMetrics(true);
       try {
         // Fetch metrics
-        const metricsResponse = await axios.get('http://localhost:5000/api/metrics');
+        const metricsResponse = await axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metrics`);
         const allMetrics = metricsResponse.data;
         setMetrics(allMetrics);
 
         // Extract unique countries and teams
-        const uniqueCountries = [...new Set(allMetrics.map((metric) => metric.country))].filter(Boolean);
+        const uniqueCountries = [...new Set(allMetrics.map((metric) => metric.country))].filter(
+          Boolean,
+        );
         setCountries(uniqueCountries);
 
         const uniqueTeams = [...new Set(allMetrics.map((metric) => metric.team))].filter(Boolean);
@@ -103,7 +105,7 @@ const MetricsOverview = () => {
       const metricIds = metrics.map((m) => m.id).join(',');
 
       axios
-        .get('http://localhost:5000/api/metric-values', {
+        .get(`${process.env.REACT_APP_ROOT_URL}/api/metric-values`, {
           params: { metric_ids: metricIds, weeks: lastWeek },
         })
         .then((response) => {
@@ -111,7 +113,10 @@ const MetricsOverview = () => {
 
           // Identify metrics missing last week's data
           const missingMetrics = metrics
-            .filter((metric) => !valuesData.some((d) => d.metric_id === metric.id && d.week_start === lastWeek))
+            .filter(
+              (metric) =>
+                !valuesData.some((d) => d.metric_id === metric.id && d.week_start === lastWeek),
+            )
             .map((m) => m.id);
 
           setLastWeekMissingMetrics(missingMetrics);
@@ -168,10 +173,10 @@ const MetricsOverview = () => {
 
         // Fetch values and goals for the metric
         const [valuesResponse, goalsResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/api/metric-values`, {
+          axios.get(`${process.env.REACT_APP_ROOT_URL}/api/metric-values`, {
             params: { metric_ids: metricId, weeks: weeksParam },
           }),
-          axios.get(`http://localhost:5000/api/goals`, {
+          axios.get(`${process.env.REACT_APP_ROOT_URL}/api/goals`, {
             params: { metric_ids: metricId, weeks: weeksParam },
           }),
         ]);
@@ -213,7 +218,10 @@ const MetricsOverview = () => {
         }));
       } catch (error) {
         console.error('Error fetching metric data:', error);
-        setMetricData((prev) => ({ ...prev, [metricId]: { error: true, loading: false } }));
+        setMetricData((prev) => ({
+          ...prev,
+          [metricId]: { error: true, loading: false },
+        }));
         setSnackbar({
           open: true,
           message: 'Failed to fetch metric data.',
@@ -293,16 +301,16 @@ const MetricsOverview = () => {
           if (existingValueId) {
             // Update existing value
             valuesPromises.push(
-              axios.put(`http://localhost:5000/api/metric-values/${existingValueId}`, {
+              axios.put(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${existingValueId}`, {
                 week_start: weekStart,
                 value: value,
-              })
+              }),
             );
           } else {
             // Create new value
             valuesPromises.push(
               axios
-                .post(`http://localhost:5000/api/metric-values/${metricId}`, {
+                .post(`${process.env.REACT_APP_ROOT_URL}/api/metric-values/${metricId}`, {
                   week_start: weekStart,
                   value: value,
                 })
@@ -321,7 +329,7 @@ const MetricsOverview = () => {
                       },
                     };
                   });
-                })
+                }),
             );
           }
         }
@@ -334,16 +342,16 @@ const MetricsOverview = () => {
           if (existingGoalId) {
             // Update existing goal
             goalsPromises.push(
-              axios.put(`http://localhost:5000/api/goals/${existingGoalId}`, {
+              axios.put(`${process.env.REACT_APP_ROOT_URL}/api/goals/${existingGoalId}`, {
                 week_start: weekStart,
                 target_value: targetValue,
-              })
+              }),
             );
           } else {
             // Create new goal
             goalsPromises.push(
               axios
-                .post(`http://localhost:5000/api/goals/${metricId}`, {
+                .post(`${process.env.REACT_APP_ROOT_URL}/api/goals/${metricId}`, {
                   week_start: weekStart,
                   target_value: targetValue,
                 })
@@ -362,7 +370,7 @@ const MetricsOverview = () => {
                       },
                     };
                   });
-                })
+                }),
             );
           }
         }
@@ -485,7 +493,11 @@ const MetricsOverview = () => {
               <div style={{ flexGrow: 1 }}>
                 <Typography
                   variant="h6"
-                  style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  style={{
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                  }}
                 >
                   {metric.name}
                   {lastWeekMissingMetrics.includes(metric.id) && (
@@ -587,7 +599,9 @@ const MetricsOverview = () => {
                             <TableCell key={index}>
                               <TextField
                                 value={value}
-                                onChange={(e) => handleValueChange(metric.id, index, e.target.value)}
+                                onChange={(e) =>
+                                  handleValueChange(metric.id, index, e.target.value)
+                                }
                                 type="number"
                                 variant="standard"
                               />
