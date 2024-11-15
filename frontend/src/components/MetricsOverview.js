@@ -1,4 +1,5 @@
 // src/components/MetricsOverview.js
+
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Typography,
@@ -18,12 +19,12 @@ import {
   TableRow,
   Paper,
   CircularProgress,
-  Snackbar, // Imported for notifications
-  Alert,    // Imported for notifications
-  Tooltip,  // Imported for tooltips
+  Snackbar,
+  Alert,
+  Tooltip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import WarningIcon from '@mui/icons-material/Warning'; // Imported for warning indicators
+import WarningIcon from '@mui/icons-material/Warning';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { format, addWeeks, startOfWeek } from 'date-fns';
@@ -40,13 +41,15 @@ const MetricsOverview = () => {
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [expandedMetricId, setExpandedMetricId] = useState(null);
 
-  const [snackbar, setSnackbar] = useState({ // Snackbar state for notifications
+  const [sortOption, setSortOption] = useState(''); // New state for sorting
+
+  const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
     severity: 'error',
   });
 
-  const [lastWeekMissingMetrics, setLastWeekMissingMetrics] = useState([]); // State to track metrics missing last week's data
+  const [lastWeekMissingMetrics, setLastWeekMissingMetrics] = useState([]);
 
   const navigate = useNavigate();
 
@@ -96,7 +99,7 @@ const MetricsOverview = () => {
   useEffect(() => {
     if (metrics.length > 0 && weeks.length > 0) {
       // Define "last week" as the week before the current week
-      const lastWeek = weeks[weeks.length - 2]; // Changed from weeks.length -1 to weeks.length -2
+      const lastWeek = weeks[weeks.length - 2];
       const metricIds = metrics.map((m) => m.id).join(',');
 
       axios
@@ -124,15 +127,34 @@ const MetricsOverview = () => {
     }
   }, [metrics, weeks]);
 
-  // Filtered metrics based on search query and selected filters
+  // Filtered and sorted metrics based on search query, selected filters, and sort option
   const filteredMetrics = useMemo(() => {
-    return metrics.filter((metric) => {
+    let filtered = metrics.filter((metric) => {
       const matchesSearch = metric.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCountry = selectedCountry ? metric.country === selectedCountry : true;
       const matchesTeam = selectedTeam ? metric.team === selectedTeam : true;
       return matchesSearch && matchesCountry && matchesTeam;
     });
-  }, [metrics, searchQuery, selectedCountry, selectedTeam]);
+
+    // Sorting logic
+    if (sortOption === 'name_asc') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOption === 'name_desc') {
+      filtered.sort((a, b) => b.name.localeCompare(a.name));
+    } else if (sortOption === 'country') {
+      filtered.sort((a, b) => (a.country || '').localeCompare(b.country || ''));
+    } else if (sortOption === 'team') {
+      filtered.sort((a, b) => (a.team || '').localeCompare(b.team || ''));
+    } else if (sortOption === 'missing_data') {
+      filtered.sort((a, b) => {
+        const aMissing = lastWeekMissingMetrics.includes(a.id) ? 0 : 1;
+        const bMissing = lastWeekMissingMetrics.includes(b.id) ? 0 : 1;
+        return aMissing - bMissing;
+      });
+    }
+
+    return filtered;
+  }, [metrics, searchQuery, selectedCountry, selectedTeam, sortOption, lastWeekMissingMetrics]);
 
   // Fetch metric data when a metric is expanded
   const handleAccordionChange = (metricId) => async (event, isExpanded) => {
@@ -159,12 +181,24 @@ const MetricsOverview = () => {
 
         const valuesArray = weeks.map((week) => {
           const dataForWeek = valuesData.find((d) => d.week_start === week);
-          return dataForWeek ? dataForWeek.value : '';
+          return dataForWeek ? dataForWeek.value.toString() : '';
         });
 
         const goalsArray = weeks.map((week) => {
           const dataForWeek = goalsData.find((g) => g.week_start === week);
-          return dataForWeek ? dataForWeek.target_value : ''; // Corrected line
+          return dataForWeek ? dataForWeek.target_value.toString() : '';
+        });
+
+        // Store goal IDs to use when updating
+        const goalsIdMap = {};
+        goalsData.forEach((goal) => {
+          goalsIdMap[goal.week_start] = goal.id;
+        });
+
+        // Store value IDs to use when updating
+        const valuesIdMap = {};
+        valuesData.forEach((value) => {
+          valuesIdMap[value.week_start] = value.id;
         });
 
         setMetricData((prev) => ({
@@ -172,6 +206,8 @@ const MetricsOverview = () => {
           [metricId]: {
             values: valuesArray,
             goals: goalsArray,
+            goalsId: goalsIdMap,
+            valuesId: valuesIdMap,
             loading: false,
           },
         }));
@@ -204,6 +240,156 @@ const MetricsOverview = () => {
     window.open(dashboardUrl, '_blank', 'noopener,noreferrer');
   };
 
+  // Handle changes to metric values
+  const handleValueChange = (metricId, index, newValue) => {
+    setMetricData((prevData) => {
+      const metricEntry = prevData[metricId];
+      const updatedValues = [...metricEntry.values];
+      updatedValues[index] = newValue;
+
+      return {
+        ...prevData,
+        [metricId]: {
+          ...metricEntry,
+          values: updatedValues,
+        },
+      };
+    });
+  };
+
+  // Handle changes to metric goals
+  const handleGoalChange = (metricId, index, newValue) => {
+    setMetricData((prevData) => {
+      const metricEntry = prevData[metricId];
+      const updatedGoals = [...metricEntry.goals];
+      updatedGoals[index] = newValue;
+
+      return {
+        ...prevData,
+        [metricId]: {
+          ...metricEntry,
+          goals: updatedGoals,
+        },
+      };
+    });
+  };
+
+  // Save all metric values and goals to the backend for a specific metric
+  const saveAllData = async (metricId) => {
+    try {
+      const metricEntry = metricData[metricId];
+      const valuesPromises = [];
+      const goalsPromises = [];
+
+      // Iterate over all weeks
+      for (let index = 0; index < weeks.length; index++) {
+        const weekStart = weeks[index];
+
+        // Handle values
+        const value = metricEntry.values[index];
+        if (value !== '') {
+          const existingValueId = metricEntry.valuesId?.[weekStart];
+
+          if (existingValueId) {
+            // Update existing value
+            valuesPromises.push(
+              axios.put(`http://localhost:5000/api/metric-values/${existingValueId}`, {
+                week_start: weekStart,
+                value: value,
+              })
+            );
+          } else {
+            // Create new value
+            valuesPromises.push(
+              axios
+                .post(`http://localhost:5000/api/metric-values/${metricId}`, {
+                  week_start: weekStart,
+                  value: value,
+                })
+                .then((response) => {
+                  // Update the state with the new value ID
+                  setMetricData((prevData) => {
+                    const metricEntry = prevData[metricId];
+                    return {
+                      ...prevData,
+                      [metricId]: {
+                        ...metricEntry,
+                        valuesId: {
+                          ...(metricEntry.valuesId || {}),
+                          [weekStart]: response.data.id,
+                        },
+                      },
+                    };
+                  });
+                })
+            );
+          }
+        }
+
+        // Handle goals
+        const targetValue = metricEntry.goals[index];
+        if (targetValue !== '') {
+          const existingGoalId = metricEntry.goalsId?.[weekStart];
+
+          if (existingGoalId) {
+            // Update existing goal
+            goalsPromises.push(
+              axios.put(`http://localhost:5000/api/goals/${existingGoalId}`, {
+                week_start: weekStart,
+                target_value: targetValue,
+              })
+            );
+          } else {
+            // Create new goal
+            goalsPromises.push(
+              axios
+                .post(`http://localhost:5000/api/goals/${metricId}`, {
+                  week_start: weekStart,
+                  target_value: targetValue,
+                })
+                .then((response) => {
+                  // Update the state with the new goal ID
+                  setMetricData((prevData) => {
+                    const metricEntry = prevData[metricId];
+                    return {
+                      ...prevData,
+                      [metricId]: {
+                        ...metricEntry,
+                        goalsId: {
+                          ...(metricEntry.goalsId || {}),
+                          [weekStart]: response.data.id,
+                        },
+                      },
+                    };
+                  });
+                })
+            );
+          }
+        }
+      }
+
+      // Wait for all promises to complete
+      await Promise.all([...valuesPromises, ...goalsPromises]);
+
+      setSnackbar({
+        open: true,
+        message: 'Data saved successfully.',
+        severity: 'success',
+      });
+    } catch (error) {
+      console.error('Error saving data:', error.response || error.message);
+      let errorMessage = 'Failed to save data.';
+      if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error',
+      });
+    }
+  };
+
   return (
     <div style={{ padding: '20px' }}>
       <Typography variant="h4" gutterBottom>
@@ -220,7 +406,7 @@ const MetricsOverview = () => {
         style={{ marginBottom: '20px' }}
       />
 
-      {/* Filters */}
+      {/* Filters and Sort Options */}
       <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
         {/* Country Filter */}
         <FormControl variant="outlined" style={{ flex: 1 }}>
@@ -259,6 +445,26 @@ const MetricsOverview = () => {
                 {team}
               </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+
+        {/* Sort Options */}
+        <FormControl variant="outlined" style={{ flex: 1 }}>
+          <InputLabel id="sort-select-label">Sort By</InputLabel>
+          <Select
+            labelId="sort-select-label"
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value)}
+            label="Sort By"
+          >
+            <MenuItem value="">
+              <em>No Sorting</em>
+            </MenuItem>
+            <MenuItem value="name_asc">Name (A-Z)</MenuItem>
+            <MenuItem value="name_desc">Name (Z-A)</MenuItem>
+            <MenuItem value="country">Country</MenuItem>
+            <MenuItem value="team">Team</MenuItem>
+            <MenuItem value="missing_data">Missing Data (Last Week)</MenuItem>
           </Select>
         </FormControl>
       </div>
@@ -308,7 +514,10 @@ const MetricsOverview = () => {
               <Button
                 variant="outlined"
                 color="secondary"
-                onClick={() => handleEditMetric(metric.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditMetric(metric.id);
+                }}
                 style={{ marginRight: '10px' }}
                 aria-label={`Edit ${metric.name}`}
               >
@@ -317,7 +526,10 @@ const MetricsOverview = () => {
               {/* Add Data Button */}
               <Button
                 variant="contained"
-                onClick={() => handleMetricClick(metric.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMetricClick(metric.id);
+                }}
                 sx={{
                   backgroundColor: '#386743',
                   color: '#FFFFFF',
@@ -333,7 +545,10 @@ const MetricsOverview = () => {
               {/* Dashboard Button */}
               <Button
                 variant="contained"
-                onClick={() => handleDashboardClick(metric.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDashboardClick(metric.id);
+                }}
                 sx={{
                   backgroundColor: '#592846',
                   color: '#FFFFFF',
@@ -356,30 +571,55 @@ const MetricsOverview = () => {
                   Failed to load data.
                 </Typography>
               ) : (
-                <TableContainer component={Paper}>
-                  <Table size="small">
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Week</TableCell>
-                        {weeks.map((week, index) => (
-                          <TableCell key={index}>{format(new Date(week), 'MMM dd')}</TableCell>
-                        ))}
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Value</TableCell>
-                        {metricData[metric.id]?.values.map((value, index) => (
-                          <TableCell key={index}>{value !== '' ? value : '-'}</TableCell>
-                        ))}
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Goal</TableCell>
-                        {metricData[metric.id]?.goals.map((goal, index) => (
-                          <TableCell key={index}>{goal !== '' ? goal : '-'}</TableCell>
-                        ))}
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <>
+                  <TableContainer component={Paper}>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>Week</TableCell>
+                          {weeks.map((week, index) => (
+                            <TableCell key={index}>{format(new Date(week), 'MMM dd')}</TableCell>
+                          ))}
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Value</TableCell>
+                          {metricData[metric.id]?.values.map((value, index) => (
+                            <TableCell key={index}>
+                              <TextField
+                                value={value}
+                                onChange={(e) => handleValueChange(metric.id, index, e.target.value)}
+                                type="number"
+                                variant="standard"
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Goal</TableCell>
+                          {metricData[metric.id]?.goals.map((goal, index) => (
+                            <TableCell key={index}>
+                              <TextField
+                                value={goal}
+                                onChange={(e) => handleGoalChange(metric.id, index, e.target.value)}
+                                type="number"
+                                variant="standard"
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  {/* Save Button */}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => saveAllData(metric.id)}
+                    style={{ marginTop: '10px' }}
+                  >
+                    Save
+                  </Button>
+                </>
               )}
             </AccordionDetails>
           </Accordion>

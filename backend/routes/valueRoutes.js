@@ -20,8 +20,6 @@ router.get('/', (req, res) => {
   });
 });
 
-// Existing routes remain unchanged...
-
 // Get all metric values for a specific metric
 router.get('/:metricId', (req, res) => {
   MetricValue.getAllByMetric(req.params.metricId, (err, rows) => {
@@ -33,9 +31,9 @@ router.get('/:metricId', (req, res) => {
 // Create a new metric value for a specific metric
 router.post('/:metricId', (req, res) => {
   const { value, week_start } = req.body;
-  MetricValue.create(req.params.metricId, value, week_start, (err) => {
+  MetricValue.create(req.params.metricId, value, week_start, (err, result) => {
     if (err) return res.status(500).send(err.message);
-    res.status(201).send('Metric value created');
+    res.status(201).json(result); // Return the created record with its ID
   });
 });
 

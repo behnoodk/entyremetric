@@ -20,8 +20,6 @@ router.get('/', (req, res) => {
   });
 });
 
-// Existing routes remain unchanged...
-
 // Get all goals for a specific metric
 router.get('/:metricId', (req, res) => {
   Goal.getAllByMetric(req.params.metricId, (err, rows) => {
@@ -33,9 +31,9 @@ router.get('/:metricId', (req, res) => {
 // Create a new goal for a specific metric
 router.post('/:metricId', (req, res) => {
   const { target_value, week_start } = req.body;
-  Goal.create(req.params.metricId, target_value, week_start, (err) => {
+  Goal.create(req.params.metricId, target_value, week_start, (err, result) => {
     if (err) return res.status(500).send(err.message);
-    res.status(201).send('Goal created');
+    res.status(201).json(result); // Return the created record with its ID
   });
 });
 
